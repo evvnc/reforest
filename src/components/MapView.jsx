@@ -3,12 +3,10 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const COULEURS = {
-  'Forêt classée': '#2d6a4f',
-  'Reboisement': '#95d5b2',
-  'Agroforesterie': '#f4a261',
-  'Exploitation forestière': '#e63946',
-  'Crédit carbone': '#7b2d8b',
-  'Inventaire forestier': '#457b9d',
+  'Parcs & Réserves': '#140152',
+  'Agro-forêts':      '#f4a261',
+  'Forêts Classées':  '#2d6a4f',
+  'Projets Privés':   '#457b9d',
 }
 
 const FONDS = {
@@ -83,19 +81,31 @@ export default function MapView({ data, onZoneClick }) {
     }
 
     geoLayerRef.current = L.geoJSON(data, {
-      style: (feature) => ({
-        fillColor: COULEURS[feature.properties.PRJ_TYPE] || '#999',
-        fillOpacity: 0.65,
-        color: 'white',
-        weight: 1,
-      }),
+      style: (feature) => {
+        const cat = feature.properties.CATEGORIE
+        const op  = feature.properties.STATUT_OP
+        const estOpportunite = op === 'Opportunité'
+        return {
+          fillColor:   COULEURS[cat] || '#999',
+          fillOpacity: estOpportunite ? 0.70 : 0.80,
+          color:       estOpportunite ? '#ffffff55' : '#ffffff',
+          weight:      estOpportunite ? 0.8 : 1.5,
+        }
+      },
       onEachFeature: (feature, layer) => {
         const p = feature.properties
-        const couleur = COULEURS[p.PRJ_TYPE] || '#999'
-
+        const cat   = p.CATEGORIE
+        const sc    = p.SOUS_CATEGORIE ? ` · ${p.SOUS_CATEGORIE}` : ''
+        const op    = p.STATUT_OP
+        const couleur = COULEURS[cat] || '#999'
+        const badgeOp = op === 'Opportunité'
+          ? `<span style="color:#facc15"> 💡 Opportunité</span>`
+          : `<span style="color:#86efac"> ✅ Actif</span>`
+        
         layer.bindTooltip(
-          `<strong>${p.PRJ_NOM}</strong><br/>
-           <span style="color:${couleur}">${p.PRJ_TYPE}</span>`,
+          `<strong>${p.NAME}</strong><br/>
+           <span style="color:${couleur}">${cat}${sc}</span><br/>
+           ${badgeOp}`,
           { sticky: true, opacity: 0.95 }
         )
 

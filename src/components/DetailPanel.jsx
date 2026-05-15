@@ -1,21 +1,37 @@
 import { useNavigate } from 'react-router-dom'
 
 const COULEURS = {
-  'Forêt classée': '#2d6a4f',
-  'Reboisement': '#95d5b2',
-  'Agroforesterie': '#f4a261',
-  'Exploitation forestière': '#e63946',
-  'Crédit carbone': '#7b2d8b',
-  'Inventaire forestier': '#457b9d',
+  'Parcs & Réserves': '#140152',
+  'Agro-forêts':      '#f4a261',
+  'Forêts Classées':  '#2d6a4f',
+  'Projets Privés':   '#457b9d',
 }
 
-const TYPE_VERS_CATEGORIE = {
-  'Forêt classée': 'reboisement',
-  'Reboisement': 'reboisement',
-  'Agroforesterie': 'agroforesterie',
-  'Exploitation forestière': 'technique',
-  'Inventaire forestier': 'technique',
-  'Crédit carbone': 'reboisement',
+function InfoLigne({ label, value }) {
+  if (!value || value === '—' || value === 0) return null
+  return (
+    <div className="flex justify-between text-xs">
+      <span className="text-gray-400">{label}</span>
+      <span className="text-white font-medium text-right max-w-[20%]">{value}</span>
+    </div>
+  )
+}
+
+function BoutonAction({ onClick, couleur, emoji, label }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full rounded-lg px-4 py-2.5 text-left text-xs font-medium transition-colors flex items-center justify-between"
+      style={{
+        border: `1px solid ${couleur}44`,
+        backgroundColor: `${couleur}18`,
+        color: couleur,
+      }}
+    >
+      <span>{emoji} {label}</span>
+      <span>→</span>
+    </button>
+  )
 }
 
 export default function DetailPanel({ zone }) {
@@ -33,33 +49,39 @@ export default function DetailPanel({ zone }) {
   }
 
   const p = zone.properties
-  const couleur = COULEURS[p.PRJ_TYPE] || '#999'
-  const categorie = TYPE_VERS_CATEGORIE[p.PRJ_TYPE] || 'reboisement'
-  const estCarbone = p.PRJ_TYPE === 'Crédit carbone'
-
-  const infos = [
-    { label: 'Type', value: p.PRJ_TYPE },
-    { label: 'Statut', value: p.PRJ_STATUT },
-    { label: 'Porteur', value: p.PRJ_PORTEUR },
-    { label: 'Entité', value: p.PRJ_ENTITE },
-    { label: 'Superficie', value: p.PRJ_HA ? `${Math.round(p.PRJ_HA).toLocaleString('fr-FR')} ha` : '—' },
-    { label: 'Financement', value: p.PRJ_FINANCEMENT },
-    { label: 'Début', value: p.PRJ_DEBUT || '—' },
-  ]
+  const couleur = COULEURS[p.CATEGORIE] || '#999'
+  const estOpportunite = p.STATUT_OP === 'Opportunité'
 
   return (
     <aside className="hidden xl:flex xl:flex-col w-72 flex-shrink-0 overflow-y-auto border-l border-white/10 bg-gray-900 p-4">
 
-      {/* Badge type */}
-      <span
-        className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white w-fit"
-        style={{ backgroundColor: couleur }}
-      >
-        {p.PRJ_TYPE}
-      </span>
+      {/* Badge catégorie */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span
+          className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+          style={{ backgroundColor: couleur }}
+        >
+          {p.CATEGORIE}
+        </span>
+        {p.SOUS_CATEGORIE && (
+          <span className="inline-block rounded-full px-2 py-1 text-xs font-semibold border"
+            style={{ color: couleur, borderColor: couleur }}>
+            {p.SOUS_CATEGORIE}
+          </span>
+        )}
+        <span
+          className="inline-block rounded-full px-2 py-1 text-xs font-semibold"
+          style={{
+            backgroundColor: estOpportunite ? '#facc1520' : '#86efac20',
+            color: estOpportunite ? '#facc15' : '#86efac',
+          }}
+        >
+          {estOpportunite ? '💡 Opportunité' : '✅ Actif'}
+        </span>
+      </div>
 
       {/* Nom */}
-      <h3 className="mt-3 text-lg font-bold text-white">{p.NAME}</h3>
+      <h3 className="mt-3 text-lg font-bold text-white leading-snug">{p.NAME}</h3>
 
       {/* Description */}
       <p
@@ -69,53 +91,104 @@ export default function DetailPanel({ zone }) {
         {p.PRJ_DESC}
       </p>
 
-      {/* Infos */}
+      {/* Infos communes */}
       <div className="mt-4 space-y-2">
-        {infos.map(({ label, value }) => (
-          <div key={label} className="flex justify-between text-xs">
-            <span className="text-gray-400">{label}</span>
-            <span className="text-white font-medium text-right max-w-[60%]">{value}</span>
-          </div>
-        ))}
+        <InfoLigne label="Superficie"    value={p.PRJ_HA ? `${Math.round(p.PRJ_HA).toLocaleString('fr-FR')} ha` : '—'} />
+        <InfoLigne label="Entité"        value={p.PRJ_ENTITE} />
+        <InfoLigne label="Financement"   value={p.PRJ_FINANCEMENT} />
+        <InfoLigne label="Début"         value={p.PRJ_DEBUT || null} />
+        <InfoLigne label="Fin prévue"    value={p.PRJ_FIN || null} />
+        <InfoLigne label="Réf. juridique" value={p.REF_JURIDIQUE} />
       </div>
 
-      {/* Projet parent */}
-      {p.PRJ_PARENT && (
-        <div className="mt-4 rounded-lg bg-green-900/20 p-3">
-          <div className="text-xs text-gray-400">Projet parent</div>
-          <div className="mt-0.5 text-sm font-medium text-green-400">{p.PRJ_PARENT}</div>
+      {/* Bloc conditionnel Opportunité */}
+      {estOpportunite && (
+        <div className="mt-4 rounded-lg bg-yellow-900/20 border border-yellow-500/30 p-3">
+          <div className="text-xs font-semibold text-yellow-400 mb-1">
+            💡 Zone libre d'investissement
+          </div>
+          <div className="text-xs text-gray-400">
+            Aucun projet recensé sur cette zone. Elle est éligible à un investissement privé ou PPP.
+          </div>
         </div>
       )}
-
-      {/* Source */}
-      <div className="mt-4 text-xs text-gray-500">
-        Source: {p.PRJ_SOURCE}
-      </div>
 
       {/* Séparateur */}
       <div className="mt-4 border-t border-white/10" />
 
-      {/* Boutons inter-modules */}
+      {/* Source */}
+      <div className="mt-3 text-xs text-gray-500">
+        Source : {p.PRJ_SOURCE}
+      </div>
+
+      {/* Séparateur */}
+      <div className="mt-3 border-t border-white/10" />
+
+      {/* Boutons d'action selon catégorie + statut */}
       <div className="mt-4 space-y-2">
 
-        {/* Lien vers Financements */}
-        <button
-          onClick={() => navigate(`/financements?categorie=${categorie}`)}
-          className="w-full rounded-lg border border-green-500/30 bg-green-900/20 px-4 py-2.5 text-left text-xs font-medium text-green-400 hover:bg-green-900/40 transition-colors flex items-center justify-between"
-        >
-          <span>💰 Financer ce projet</span>
-          <span>→</span>
-        </button>
-
-        {/* Lien vers Marché Carbone — uniquement pour les projets carbone */}
-        {estCarbone && (
-          <button
+        {/* Parcs & Réserves → Marché Carbone REDD+ */}
+        {p.CATEGORIE === 'Parcs & Réserves' && (
+          <BoutonAction
             onClick={() => navigate('/marche-carbone')}
-            className="w-full rounded-lg border border-purple-500/30 bg-purple-900/20 px-4 py-2.5 text-left text-xs font-medium text-purple-400 hover:bg-purple-900/40 transition-colors flex items-center justify-between"
-          >
-            <span>🌿 Processus carbone</span>
-            <span>→</span>
-          </button>
+            couleur="#86efac"
+            emoji=""
+            label="Comprendre le mécanisme carbone"
+          />
+        )}
+
+        {/* Agro-forêts → Financements ICF */}
+        {p.CATEGORIE === 'Agro-forêts' && (
+          <BoutonAction
+            onClick={() => navigate('/financements?categorie=agroforesterie')}
+            couleur="#f4a261"
+            emoji="🤝"
+            label="Voir les financements cacao-forêt"
+          />
+        )}
+
+        {/* Projets Privés → Financements */}
+        {p.CATEGORIE === 'Projets Privés' && (
+          <BoutonAction
+            onClick={() => navigate('/financements?categorie=reboisement')}
+            couleur="#457b9d"
+            emoji="💰"
+            label="Financer ce projet"
+          />
+        )}
+
+        {/* FC Actif → Financements */}
+        {p.CATEGORIE === 'Forêts Classées' && !estOpportunite && (
+          <BoutonAction
+            onClick={() => navigate('/financements?categorie=reboisement')}
+            couleur="#2d6a4f"
+            emoji="📈"
+            label="Voir le financement en cours"
+          />
+        )}
+
+        {/* FC Opportunité → 3 boutons */}
+        {p.CATEGORIE === 'Forêts Classées' && estOpportunite && (
+          <>
+            <BoutonAction
+              onClick={() => navigate('/financements?categorie=reboisement')}
+              couleur="#facc15"
+              emoji=""
+              label="Proposer un PPP"
+            />
+            <BoutonAction
+              onClick={() => navigate('/financements?categorie=technique')}
+              couleur="#facc15"
+              emoji=""
+              label="Proposer un inventaire"
+            />
+            <BoutonAction
+              onClick={() => navigate('/marche-carbone')}
+              couleur="#facc15"
+              emoji=""
+              label="Lancer un projet carbone"
+            />
+          </>
         )}
 
       </div>

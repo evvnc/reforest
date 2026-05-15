@@ -6,14 +6,13 @@ import MapView from '../components/MapView'
 import DrawerMobile from '../components/DrawerMobile'
 
 const FILTRES_INITIAUX = {
-  'Forêt classée': true,
-  'Reboisement': true,
-  'Agroforesterie': true,
-  'Exploitation forestière': true,
-  'Crédit carbone': true,
-  'Inventaire forestier': true,
+  'Parcs & Réserves': true,
+  'Agro-forêts':      true,
+  'Forêts Classées':  true,
+  'Projets Privés':   true,
+  'Actif':            true,
+  'Opportunité':      true,
 }
-
 export default function Cartographie() {
   const navigate = useNavigate()
   const [geoData, setGeoData] = useState(null)
@@ -34,7 +33,9 @@ export default function Cartographie() {
 
   useEffect(() => {
     if (!geoData) return
-    const features = geoData.features.filter(f => filtres[f.properties.PRJ_TYPE])
+    const features = geoData.features.filter(f =>
+      filtres[f.properties.CATEGORIE] && filtres[f.properties.STATUT_OP]
+    )
     setFilteredData({ ...geoData, features })
   }, [filtres, geoData])
 
@@ -85,3 +86,4 @@ export default function Cartographie() {
     </div>
   )
 }
+
